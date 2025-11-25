@@ -238,34 +238,34 @@ export default function App() {
 
         {/* Main Content Container */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 md:p-8">
-          {/* SCREEN 1: Camera Capture Feature */}
-          {/* Shows camera interface with animated square overlay */}
-          {screen === "camera" && (
+      {/* SCREEN 1: Camera Capture Feature */}
+      {/* Shows camera interface with animated square overlay */}
+      {screen === "camera" && (
             <CameraCapture key={cameraKey} onCaptured={handleCapture} />
-          )}
+      )}
 
-          {/* SCREEN 2: Puzzle Grid Feature */}
-          {/* Shows captured image with grid and watermarks, user selects cells */}
-          {screen === "puzzle" && captured && wm && (
-            <PuzzleGrid
-              imageDataUrl={captured.image}
-              region={captured.region}
-              gridRows={captured.gridRows}
-              gridCols={captured.gridCols}
-              watermarks={wm.watermarks}
-              targetShape={wm.targetShape}
-              onValidate={validatePuzzle}
-            />
-          )}
+      {/* SCREEN 2: Puzzle Grid Feature */}
+      {/* Shows captured image with grid and watermarks, user selects cells */}
+      {screen === "puzzle" && captured && wm && (
+        <PuzzleGrid
+          imageDataUrl={captured.image}
+          region={captured.region}
+          gridRows={captured.gridRows}
+          gridCols={captured.gridCols}
+          watermarks={wm.watermarks}
+          targetShape={wm.targetShape}
+          onValidate={validatePuzzle}
+        />
+      )}
 
-          {/* SCREEN 3: Result Display Feature */}
-          {/* Shows pass/fail message and restart option */}
-          {screen === "result" && (
+      {/* SCREEN 3: Result Display Feature */}
+      {/* Shows pass/fail message and restart option */}
+      {screen === "result" && (
             <div className="text-center space-y-6">
               <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
                 Result
               </h2>
-              {result ? (
+          {result ? (
                 <div className="space-y-4">
                   <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30">
                     <svg className="w-10 h-10 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -279,7 +279,7 @@ export default function App() {
                     You've successfully verified that you're human.
                   </p>
                 </div>
-              ) : (
+          ) : (
                 <div className="space-y-4">
                   <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30">
                     <svg className="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -293,16 +293,16 @@ export default function App() {
                     Please try again to verify you're human.
                   </p>
                 </div>
-              )}
+          )}
 
               <button
                 onClick={resetChallenge}
                 className="mt-6 px-6 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors duration-200 shadow-md hover:shadow-lg"
               >
                 Try Again
-              </button>
-            </div>
-          )}
+          </button>
+        </div>
+      )}
         </div>
       </div>
     </div>
