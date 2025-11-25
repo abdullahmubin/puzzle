@@ -13,6 +13,8 @@ export default function PuzzleGrid({
   watermarks,
   targetShape,
   targetColor,
+  attemptCount = 0,
+  maxAttempts = 3,
   onValidate
 }) {
 
@@ -229,8 +231,26 @@ export default function PuzzleGrid({
     });
   }
 
+  // Tolerance configuration (should match App.jsx)
+  const TOLERANCE_CONFIG = {
+    1: { allowedMistakes: 2, description: "You can make up to 2 mistakes" },
+    2: { allowedMistakes: 1, description: "You can make up to 1 mistake" },
+    3: { allowedMistakes: 0, description: "Perfect match required" },
+  };
+
+  const currentAttempt = attemptCount + 1;
+  const tolerance = TOLERANCE_CONFIG[currentAttempt] || TOLERANCE_CONFIG[3];
+
   return (
     <div className="space-y-6">
+      {/* Attempt indicator */}
+      {attemptCount > 0 && (
+        <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 text-center">
+          <p className="text-sm text-orange-700 dark:text-orange-300">
+            Attempt {currentAttempt} of {maxAttempts} - {tolerance.description}
+          </p>
+        </div>
+      )}
       <div className="text-center">
         <h3 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
           Select all <span className={`capitalize font-bold ${

@@ -1,6 +1,7 @@
 /**
  * Generates random watermarks for the puzzle
  * Picks 50% of cells, assigns random shapes and colors, then picks a target
+ * from the created watermarks (ensures there's always at least one correct answer)
  */
 export function createWatermarks(rows, cols) {
     const total = rows * cols;
@@ -26,9 +27,11 @@ export function createWatermarks(rows, cols) {
       color: colors[Math.floor(Math.random() * colors.length)]
     }));
   
-    // Pick a random target shape and color
-    const targetShape = shapes[Math.floor(Math.random() * shapes.length)];
-    const targetColor = colors[Math.floor(Math.random() * colors.length)];
+    // Pick a target from the watermarks we actually created
+    // This ensures there's always at least one correct answer
+    const randomWatermark = watermarks[Math.floor(Math.random() * watermarks.length)];
+    const targetShape = randomWatermark.shape;
+    const targetColor = randomWatermark.color;
   
     return { watermarks, targetShape, targetColor };
   }

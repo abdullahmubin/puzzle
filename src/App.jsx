@@ -27,13 +27,38 @@ export default function App() {
   // Key to force camera component to remount on reset
   const [cameraKey, setCameraKey] = useState(0);
 
+  // Attempt tracking for progressive tolerance
+  const [attemptCount, setAttemptCount] = useState(0);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const MAX_ATTEMPTS = 3;
+
+  // Tolerance configuration - decreases with each attempt
+  const TOLERANCE_CONFIG = {
+    1: { allowedMistakes: 2, description: "You can make up to 2 mistakes" }, // First attempt: lenient
+    2: { allowedMistakes: 1, description: "You can make up to 1 mistake" }, // Second attempt: moderate
+    3: { allowedMistakes: 0, description: "Perfect match required" }, // Third attempt: strict
+  };
+
   // Reset everything to start a new challenge
+  // Note: attemptCount is NOT reset here - it only resets on success
+  // This allows progressive tolerance across retries
   function resetChallenge() {
     setScreen("camera");
     setCaptured(null);
     setWm(null);
     setResult(null);
     // Change key to force camera component to remount
+    setCameraKey(prev => prev + 1);
+  }
+
+  // Reset everything including attempt count (for starting completely new challenge)
+  function resetChallengeCompletely() {
+    setScreen("camera");
+    setCaptured(null);
+    setWm(null);
+    setResult(null);
+    setAttemptCount(0);
+    setIsBlocked(false);
     setCameraKey(prev => prev + 1);
   }
 
@@ -56,7 +81,7 @@ export default function App() {
     // Save everything
     setCaptured({ image, region, gridRows, gridCols });
     setWm({ watermarks, targetShape, targetColor });
-
+    
     // Go to puzzle screen
     setScreen("puzzle");
   }
@@ -151,6 +176,13 @@ export default function App() {
 
   // Called when user clicks "Validate"
   function validatePuzzle(selectedIndices, timingData = null) {
+    // Check if user is blocked
+    if (isBlocked) {
+      setResult(false);
+      setScreen("result");
+      return;
+    }
+
     // First check if the timing looks human
     const humanValidation = validateHumanInteraction(timingData);
     
@@ -178,12 +210,56 @@ export default function App() {
     const correctSet = new Set(correct);
     const userSet = new Set(selectedIndices);
 
-    // They pass if they got everything right
-    let isValid = correctSet.size === userSet.size &&
-      [...correctSet].every(i => userSet.has(i));
+    // Calculate mistakes
+    const correctSelected = [...userSet].filter(i => correctSet.has(i)).length;
+    const incorrectSelected = userSet.size - correctSelected;
+    const missedCorrect = correctSet.size - correctSelected;
+    const totalMistakes = incorrectSelected + missedCorrect;
 
-    setResult(isValid);
+    // Get tolerance for current attempt
+    const currentAttempt = attemptCount + 1;
+    const tolerance = TOLERANCE_CONFIG[currentAttempt] || TOLERANCE_CONFIG[3];
+    const allowedMistakes = tolerance.allowedMistakes;
+
+    // Validate against tolerance
+    let isValid = false;
+    if (totalMistakes <= allowedMistakes && correctSet.size > 0) {
+      // Additional check: ensure reasonable accuracy even with tolerance
+      const accuracy = correctSelected / correctSet.size;
+      if (currentAttempt === 1 && allowedMistakes > 0) {
+        // First attempt with tolerance: require at least 80% accuracy
+        isValid = accuracy >= 0.8 && totalMistakes <= allowedMistakes;
+      } else if (allowedMistakes === 0) {
+        // Perfect match required (attempt 3)
+        isValid = correctSet.size === userSet.size &&
+      [...correctSet].every(i => userSet.has(i));
+      } else {
+        // Attempt 2 with tolerance 1: allow mistakes but require good accuracy
+        isValid = accuracy >= 0.9 && totalMistakes <= allowedMistakes;
+      }
+    }
+
+    if (isValid) {
+      // Success: reset attempt count
+      setAttemptCount(0);
+      setResult(true);
+      setScreen("result");
+    } else {
+      // Failure: increment attempt count
+      const newAttemptCount = attemptCount + 1;
+      setAttemptCount(newAttemptCount);
+
+      if (newAttemptCount >= MAX_ATTEMPTS) {
+        // Block user after max attempts
+        setIsBlocked(true);
+        setResult(false);
+        setScreen("result");
+      } else {
+        // Allow retry with stricter tolerance
+        setResult(false);
     setScreen("result");
+      }
+    }
   }
 
   return (
@@ -216,6 +292,8 @@ export default function App() {
           watermarks={wm.watermarks}
           targetShape={wm.targetShape}
           targetColor={wm.targetColor}
+          attemptCount={attemptCount}
+          maxAttempts={MAX_ATTEMPTS}
           onValidate={validatePuzzle}
         />
       )}
@@ -239,6 +317,32 @@ export default function App() {
                   <p className="text-slate-600 dark:text-slate-400">
                     You've successfully verified that you're human.
                   </p>
+                  <button
+                    onClick={resetChallengeCompletely}
+                    className="mt-6 px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors duration-200 shadow-md hover:shadow-lg"
+                  >
+                    Play Again
+                  </button>
+                </div>
+          ) : isBlocked ? (
+                <div className="space-y-4">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30">
+                    <svg className="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                  <p className="text-xl font-semibold text-red-600 dark:text-red-400">
+                    Maximum Attempts Reached
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-400">
+                    You have exceeded the maximum number of attempts. Please start a new challenge.
+                  </p>
+                  <button
+                    onClick={resetChallengeCompletely}
+                    className="mt-6 px-6 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors duration-200 shadow-md hover:shadow-lg"
+                  >
+                    Start New Challenge
+                  </button>
                 </div>
           ) : (
                 <div className="space-y-4">
@@ -251,17 +355,23 @@ export default function App() {
                     CAPTCHA Failed
                   </p>
                   <p className="text-slate-600 dark:text-slate-400">
-                    Please try again to verify you're human.
+                    Attempt {attemptCount + 1} of {MAX_ATTEMPTS}
                   </p>
+                  {attemptCount + 1 < MAX_ATTEMPTS && (
+                    <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4">
+                      <p className="text-sm text-orange-700 dark:text-orange-300">
+                        {TOLERANCE_CONFIG[attemptCount + 2]?.description || "Next attempt will be stricter"}
+                      </p>
+                    </div>
+                  )}
+                  <button
+                    onClick={resetChallenge}
+                    className="mt-6 px-6 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors duration-200 shadow-md hover:shadow-lg"
+                  >
+                    Try Again
+                  </button>
                 </div>
           )}
-
-              <button
-                onClick={resetChallenge}
-                className="mt-6 px-6 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors duration-200 shadow-md hover:shadow-lg"
-              >
-                Try Again
-          </button>
         </div>
       )}
         </div>
