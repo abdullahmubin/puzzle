@@ -1,57 +1,46 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * CAMERA CAPTURE COMPONENT
- * 
- * FEATURES:
- * 1. Camera Access - Requests and displays user's front-facing camera
- * 2. Animated Square Overlay - Shows a moving square that bounces around
- * 3. Frame Capture - Captures the current video frame as an image
- * 4. Region Extraction - Extracts the square's position for puzzle grid
+ * Camera capture component
+ * Shows camera feed with a bouncing square overlay, captures frame when user clicks
  */
 export default function CameraCapture({ onCaptured }) {
-  // REFS: DOM element references
-  const videoRef = useRef(null);        // Video element showing camera feed
-  const overlayRef = useRef(null);      // Canvas overlay for animated square
-  const animationRef = useRef(null);    // Animation frame ID for cleanup
+  // Refs for video, overlay canvas, and animation
+  const videoRef = useRef(null);
+  const overlayRef = useRef(null);
+  const animationRef = useRef(null);
 
-  // STATE: Controls whether animation loop is running
+  // Whether the animation is running
   const [running, setRunning] = useState(true);
 
-  // REF: Stores square position, size, and velocity for animation
-  // This manages the animated square overlay feature
+  // Square position and movement
   const squareRef = useRef({
-    x: 50,        // X position (pixels)
-    y: 50,        // Y position (pixels)
-    size: 150,    // Square size (pixels)
-    vx: 1.2,      // X velocity (pixels per frame)
-    vy: 1.0       // Y velocity (pixels per frame)
+    x: 50,
+    y: 50,
+    size: 150,
+    vx: 1.2,  // horizontal velocity
+    vy: 1.0   // vertical velocity
   });
 
-  // EFFECT: Initialize camera when component mounts
-  // Cleanup: Stops camera when component unmounts
+  // Start camera when component mounts, stop when it unmounts
   useEffect(() => {
     startCamera();
     return () => stopCamera();
   }, []);
 
-  /**
-   * FEATURE: Camera Initialization
-   * Requests access to user's front-facing camera and starts video stream
-   */
+  // Request camera access and start video stream
   async function startCamera() {
     try {
-      // Reset running state
       setRunning(true);
       
-      // Clear any existing stream from video element
+      // Clean up any existing stream first
       if (videoRef.current?.srcObject) {
         const oldStream = videoRef.current.srcObject;
         oldStream.getTracks().forEach(track => track.stop());
         videoRef.current.srcObject = null;
       }
 
-      // Reset square position for new session
+      // Reset square to starting position
       squareRef.current = {
         x: 50,
         y: 50,
@@ -60,17 +49,17 @@ export default function CameraCapture({ onCaptured }) {
         vy: 1.0
       };
 
-      // Request camera access (front-facing, no audio)
+      // Get front-facing camera (no audio needed)
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user' },
         audio: false
       });
       
-      // Connect stream to video element and play
+      // Show video feed
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
 
-      // Start the animated square overlay
+      // Start the bouncing square animation
       animateSquare();
     } catch (e) {
       console.error('Camera error:', e);
@@ -78,20 +67,17 @@ export default function CameraCapture({ onCaptured }) {
     }
   }
 
-  /**
-   * FEATURE: Camera Cleanup
-   * Stops the camera stream and cancels animation
-   */
+  // Stop camera and cancel animation
   function stopCamera() {
     setRunning(false);
     
-    // Cancel animation frame
+    // Stop animation loop
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
     
-    // Stop all camera tracks and clear srcObject
+    // Stop camera tracks
     if (videoRef.current?.srcObject) {
       const stream = videoRef.current.srcObject;
       stream.getTracks().forEach(track => track.stop());
@@ -99,17 +85,8 @@ export default function CameraCapture({ onCaptured }) {
     }
   }
 
-  /**
-   * FEATURE: Animated Square Overlay
-   * Creates a physics-based animation of a square bouncing around the video
-   * 
-   * Animation details:
-   * - Square moves with velocity (vx, vy)
-   * - Random acceleration adds unpredictability
-   * - Friction (0.92 multiplier) slows it down gradually
-   * - Bounces off edges of video
-   * - Dark overlay with transparent square window
-   */
+  // Animate the bouncing square overlay
+  // Uses simple physics: velocity, random acceleration, friction, and boundary bouncing
   function animateSquare() {
     const canvas = overlayRef.current;
     const ctx = canvas.getContext('2d');
@@ -127,31 +104,28 @@ export default function CameraCapture({ onCaptured }) {
 
       const sq = squareRef.current;
 
-      // FEATURE: Physics-based movement
-      // Add random acceleration for unpredictable movement
+      // Add some randomness to make movement unpredictable
       sq.vx += (Math.random() - 0.5) * 0.5;
       sq.vy += (Math.random() - 0.5) * 0.5;
 
-      // Apply friction to slow down gradually
+      // Apply friction so it slows down over time
       sq.vx *= 0.92;
       sq.vy *= 0.92;
 
-      // Update position
+      // Move the square
       sq.x += sq.vx;
       sq.y += sq.vy;
 
-      // FEATURE: Boundary collision detection
-      // Keep square within video bounds (bounce off edges)
+      // Bounce off edges
       sq.x = Math.max(0, Math.min(vw - sq.size, sq.x));
       sq.y = Math.max(0, Math.min(vh - sq.size, sq.y));
 
-      // FEATURE: Overlay rendering
-      // Draw dark overlay covering entire video
+      // Draw dark overlay everywhere except the square
       ctx.clearRect(0, 0, vw, vh);
       ctx.fillStyle = "rgba(0,0,0,0.4)";
       ctx.fillRect(0, 0, vw, vh);
 
-      // Clear the square area to show video through
+      // Clear square area to show video
       ctx.clearRect(sq.x, sq.y, sq.size, sq.size);
       
       // Draw white border around square
@@ -159,54 +133,40 @@ export default function CameraCapture({ onCaptured }) {
       ctx.lineWidth = 2;
       ctx.strokeRect(sq.x, sq.y, sq.size, sq.size);
 
-      // Continue animation loop
+      // Keep animating
       animationRef.current = requestAnimationFrame(step);
     }
 
     step();
   }
 
-  /**
-   * FEATURE: Frame Capture
-   * Captures the current video frame and extracts the square region
-   * 
-   * This function:
-   * 1. Draws current video frame to a canvas (before stopping camera)
-   * 2. Converts canvas to image data URL
-   * 3. Extracts square position and size
-   * 4. Stops the camera
-   * 5. Passes data to parent component
-   */
+  // Capture the current video frame
   function captureFrame() {
     const video = videoRef.current;
 
-    // Validate video has valid dimensions before capturing
+    // Make sure video is ready
     if (!video || !video.videoWidth || !video.videoHeight) {
       console.error('Video not ready for capture');
       return;
     }
 
-    // Create temporary canvas to capture frame
+    // Create a canvas and draw the video frame to it
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
-
-    // Draw current video frame to canvas (before stopping camera)
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0);
 
-    // Convert canvas to image data URL (base64 PNG)
+    // Convert to image data URL
     const image = canvas.toDataURL("image/png");
     
-    // Get square position and size
+    // Get where the square was positioned
     const { x, y, size } = squareRef.current;
 
-    // Stop camera and animation AFTER capturing
+    // Stop camera after capturing
     stopCamera();
 
-    // Pass captured data to parent component
-    // image: base64 image data
-    // region: square position and dimensions for puzzle grid
+    // Send captured data to parent
     onCaptured({
       image,
       region: { x, y, size, width: canvas.width, height: canvas.height }
@@ -221,17 +181,13 @@ export default function CameraCapture({ onCaptured }) {
         </p>
       </div>
       <div className="relative max-w-md mx-auto rounded-lg overflow-hidden shadow-lg border-2 border-slate-300 dark:border-slate-600">
-        {/* FEATURE: Video Display - Shows live camera feed */}
         <video ref={videoRef} className="w-full h-auto" />
-
-        {/* FEATURE: Animated Overlay Canvas - Draws the moving square */}
         <canvas
           ref={overlayRef}
           className="absolute top-0 left-0 w-full h-full pointer-events-none"
         />
       </div>
 
-      {/* FEATURE: Capture Button - Triggers frame capture */}
       <div className="flex justify-center">
         <button
           onClick={captureFrame}
