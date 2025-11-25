@@ -41,6 +41,25 @@ export default function CameraCapture({ onCaptured }) {
    */
   async function startCamera() {
     try {
+      // Reset running state
+      setRunning(true);
+      
+      // Clear any existing stream from video element
+      if (videoRef.current?.srcObject) {
+        const oldStream = videoRef.current.srcObject;
+        oldStream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+
+      // Reset square position for new session
+      squareRef.current = {
+        x: 50,
+        y: 50,
+        size: 150,
+        vx: 1.2,
+        vy: 1.0
+      };
+
       // Request camera access (front-facing, no audio)
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user' },
@@ -54,7 +73,8 @@ export default function CameraCapture({ onCaptured }) {
       // Start the animated square overlay
       animateSquare();
     } catch (e) {
-      console.error(e);
+      console.error('Camera error:', e);
+      setRunning(false);
     }
   }
 
@@ -66,11 +86,17 @@ export default function CameraCapture({ onCaptured }) {
     setRunning(false);
     
     // Cancel animation frame
-    if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
     
-    // Stop all camera tracks
-    const s = videoRef.current?.srcObject;
-    if (s) s.getTracks().forEach(t => t.stop());
+    // Stop all camera tracks and clear srcObject
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
   }
 
   /**
@@ -145,24 +171,27 @@ export default function CameraCapture({ onCaptured }) {
    * Captures the current video frame and extracts the square region
    * 
    * This function:
-   * 1. Stops the camera
-   * 2. Draws current video frame to a canvas
-   * 3. Converts canvas to image data URL
-   * 4. Extracts square position and size
+   * 1. Draws current video frame to a canvas (before stopping camera)
+   * 2. Converts canvas to image data URL
+   * 3. Extracts square position and size
+   * 4. Stops the camera
    * 5. Passes data to parent component
    */
   function captureFrame() {
-    // Stop camera and animation
-    stopCamera();
-
     const video = videoRef.current;
+
+    // Validate video has valid dimensions before capturing
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      console.error('Video not ready for capture');
+      return;
+    }
 
     // Create temporary canvas to capture frame
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
-    // Draw current video frame to canvas
+    // Draw current video frame to canvas (before stopping camera)
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0);
 
@@ -171,6 +200,9 @@ export default function CameraCapture({ onCaptured }) {
     
     // Get square position and size
     const { x, y, size } = squareRef.current;
+
+    // Stop camera and animation AFTER capturing
+    stopCamera();
 
     // Pass captured data to parent component
     // image: base64 image data
@@ -182,27 +214,32 @@ export default function CameraCapture({ onCaptured }) {
   }
 
   return (
-    <div style={{ position: "relative", maxWidth: "400px" }}>
-      {/* FEATURE: Video Display - Shows live camera feed */}
-      <video ref={videoRef} style={{ width: "100%" }} />
+    <div className="space-y-4">
+      <div className="text-center mb-4">
+        <p className="text-slate-700 dark:text-slate-300">
+          Position yourself in the frame and wait for the square to align
+        </p>
+      </div>
+      <div className="relative max-w-md mx-auto rounded-lg overflow-hidden shadow-lg border-2 border-slate-300 dark:border-slate-600">
+        {/* FEATURE: Video Display - Shows live camera feed */}
+        <video ref={videoRef} className="w-full h-auto" />
 
-      {/* FEATURE: Animated Overlay Canvas - Draws the moving square */}
-      <canvas
-        ref={overlayRef}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          pointerEvents: "none"  // Allows clicks to pass through
-        }}
-      />
+        {/* FEATURE: Animated Overlay Canvas - Draws the moving square */}
+        <canvas
+          ref={overlayRef}
+          className="absolute top-0 left-0 w-full h-full pointer-events-none"
+        />
+      </div>
 
       {/* FEATURE: Capture Button - Triggers frame capture */}
-      <button onClick={captureFrame} style={{ marginTop: 10 }}>
-        Continue
-      </button>
+      <div className="flex justify-center">
+        <button
+          onClick={captureFrame}
+          className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors duration-200 shadow-md hover:shadow-lg"
+        >
+          Capture & Continue
+        </button>
+      </div>
     </div>
   );
 }

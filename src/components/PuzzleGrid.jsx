@@ -48,12 +48,20 @@ export default function PuzzleGrid({
    */
   useEffect(() => {
     const canvas = canvasRef.current;
+    if (!canvas) return;
+
     const ctx = canvas.getContext("2d");
 
     // FEATURE: Time-Based Detection - Initialize timing tracking
     // Record when puzzle screen is displayed (for human verification)
     puzzleStartTimeRef.current = performance.now();
     clickTimestampsRef.current = [];
+
+    // Validate image data URL
+    if (!imageDataUrl) {
+      console.error('No image data URL provided');
+      return;
+    }
 
     // Load image from data URL
     const img = new Image();
@@ -71,8 +79,11 @@ export default function PuzzleGrid({
       // Draw grid lines and watermarks on top
       drawPuzzle(ctx);
     };
+    img.onerror = (error) => {
+      console.error('Failed to load image:', error);
+    };
     img.src = imageDataUrl;
-  }, []);
+  }, [imageDataUrl, region, watermarks]);
 
   /**
    * FEATURE: Draw Puzzle Grid and Watermarks
@@ -289,36 +300,50 @@ export default function PuzzleGrid({
   }
 
   return (
-    <div>
+    <div className="space-y-6">
       {/* FEATURE: Instructions Display */}
       {/* Shows user which shape they need to find */}
-      <h3>Select all <b>{targetShape}</b> shapes</h3>
+      <div className="text-center">
+        <h3 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
+          Select all <span className="text-blue-600 dark:text-blue-400 capitalize font-bold">{targetShape}</span> shapes
+        </h3>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Click on the cells containing the target shape
+        </p>
+      </div>
 
       {/* FEATURE: Interactive Canvas */}
       {/* Displays image with grid and handles click events */}
-      <canvas
-        ref={canvasRef}
-        onClick={handleClick}
-        style={{ border: "1px solid #ccc", maxWidth: "400px" }}
-      />
-
-      <br /><br />
+      <div className="flex justify-center">
+        <canvas
+          ref={canvasRef}
+          onClick={handleClick}
+          className="border-2 border-slate-300 dark:border-slate-600 rounded-lg shadow-md max-w-full cursor-pointer hover:shadow-lg transition-shadow duration-200"
+          style={{ maxWidth: "400px" }}
+        />
+      </div>
 
       {/* FEATURE: Validation Button */}
       {/* Submits selected cells for validation */}
-      <button onClick={() => {
-        // FEATURE: Time-Based Detection - Record validation time
-        validationTimeRef.current = performance.now();
-        
-        // Pass timing data along with selected cells for validation
-        onValidate([...selected], {
-          puzzleStartTime: puzzleStartTimeRef.current,
-          clickTimestamps: clickTimestampsRef.current,
-          validationTime: validationTimeRef.current
-        });
-      }}>
-        Validate
-      </button>
+      <div className="flex justify-center">
+        <button
+          onClick={() => {
+            // FEATURE: Time-Based Detection - Record validation time
+            validationTimeRef.current = performance.now();
+            
+            // Pass timing data along with selected cells for validation
+            onValidate([...selected], {
+              puzzleStartTime: puzzleStartTimeRef.current,
+              clickTimestamps: clickTimestampsRef.current,
+              validationTime: validationTimeRef.current
+            });
+          }}
+          className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={selected.size === 0}
+        >
+          Validate Selection
+        </button>
+      </div>
     </div>
   );
 }

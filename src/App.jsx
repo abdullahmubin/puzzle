@@ -27,6 +27,22 @@ export default function App() {
   // STATE MANAGEMENT: Stores validation result (true = passed, false = failed)
   const [result, setResult] = useState(null);
 
+  // STATE MANAGEMENT: Key for CameraCapture component to force remount on reset
+  const [cameraKey, setCameraKey] = useState(0);
+
+  /**
+   * FEATURE: Reset the CAPTCHA flow
+   * Resets all state to start a new challenge
+   */
+  function resetChallenge() {
+    setScreen("camera");
+    setCaptured(null);
+    setWm(null);
+    setResult(null);
+    // Force CameraCapture to remount by changing key
+    setCameraKey(prev => prev + 1);
+  }
+
   /**
    * FEATURE: Handle Camera Capture
    * Called when user captures a photo from the camera
@@ -38,6 +54,12 @@ export default function App() {
    * 4. Transitions to the puzzle screen
    */
   function handleCapture({ image, region }) {
+    // Validate captured data
+    if (!image || !region) {
+      console.error('Invalid capture data:', { image, region });
+      return;
+    }
+
     // Generate grid configuration - fixed 4x4 grid (16 cells total)
     const gridRows = 4;
     const gridCols = 4;
@@ -202,43 +224,87 @@ export default function App() {
   }
 
   return (
-    <div style={{ padding: 20 }}>
-      {/* SCREEN 1: Camera Capture Feature */}
-      {/* Shows camera interface with animated square overlay */}
-      {screen === "camera" && (
-        <CameraCapture onCaptured={handleCapture} />
-      )}
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl">
+        {/* Header Section with Title and Subtitle */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-3">
+            Visual CAPTCHA Challenge
+          </h1>
+          <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400">
+            Prove you're human by completing the visual puzzle
+          </p>
+        </div>
 
-      {/* SCREEN 2: Puzzle Grid Feature */}
-      {/* Shows captured image with grid and watermarks, user selects cells */}
-      {screen === "puzzle" && captured && wm && (
-        <PuzzleGrid
-          imageDataUrl={captured.image}
-          region={captured.region}
-          gridRows={captured.gridRows}
-          gridCols={captured.gridCols}
-          watermarks={wm.watermarks}
-          targetShape={wm.targetShape}
-          onValidate={validatePuzzle}
-        />
-      )}
-
-      {/* SCREEN 3: Result Display Feature */}
-      {/* Shows pass/fail message and restart option */}
-      {screen === "result" && (
-        <div>
-          <h2>Result</h2>
-          {result ? (
-            <p style={{ color: "green" }}>✔ You passed the CAPTCHA</p>
-          ) : (
-            <p style={{ color: "red" }}>✖ CAPTCHA failed</p>
+        {/* Main Content Container */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 md:p-8">
+          {/* SCREEN 1: Camera Capture Feature */}
+          {/* Shows camera interface with animated square overlay */}
+          {screen === "camera" && (
+            <CameraCapture key={cameraKey} onCaptured={handleCapture} />
           )}
 
-          <button onClick={() => window.location.reload()}>
-            Restart
-          </button>
+          {/* SCREEN 2: Puzzle Grid Feature */}
+          {/* Shows captured image with grid and watermarks, user selects cells */}
+          {screen === "puzzle" && captured && wm && (
+            <PuzzleGrid
+              imageDataUrl={captured.image}
+              region={captured.region}
+              gridRows={captured.gridRows}
+              gridCols={captured.gridCols}
+              watermarks={wm.watermarks}
+              targetShape={wm.targetShape}
+              onValidate={validatePuzzle}
+            />
+          )}
+
+          {/* SCREEN 3: Result Display Feature */}
+          {/* Shows pass/fail message and restart option */}
+          {screen === "result" && (
+            <div className="text-center space-y-6">
+              <h2 className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+                Result
+              </h2>
+              {result ? (
+                <div className="space-y-4">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30">
+                    <svg className="w-10 h-10 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-xl font-semibold text-green-600 dark:text-green-400">
+                    You passed the CAPTCHA!
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-400">
+                    You've successfully verified that you're human.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 dark:bg-red-900/30">
+                    <svg className="w-10 h-10 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                  <p className="text-xl font-semibold text-red-600 dark:text-red-400">
+                    CAPTCHA Failed
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-400">
+                    Please try again to verify you're human.
+                  </p>
+                </div>
+              )}
+
+              <button
+                onClick={resetChallenge}
+                className="mt-6 px-6 py-3 bg-slate-900 dark:bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors duration-200 shadow-md hover:shadow-lg"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
