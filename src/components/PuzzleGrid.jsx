@@ -268,7 +268,7 @@ export default function PuzzleGrid({
           className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={selected.size === 0}
         >
-          Validate Selection
+          Validate
         </button>
       </div>
     </div>

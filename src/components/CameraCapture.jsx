@@ -193,7 +193,7 @@ export default function CameraCapture({ onCaptured }) {
           onClick={captureFrame}
           className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors duration-200 shadow-md hover:shadow-lg"
         >
-          Capture & Continue
+          Continue
         </button>
       </div>
     </div>
