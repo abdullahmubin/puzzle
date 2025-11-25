@@ -375,6 +375,83 @@ export default function App() {
         </div>
       )}
         </div>
+        
+        {/* Footer with developer information */}
+        <footer className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 pt-6">
+          <p className="mb-2">
+            <strong>React.js Code Challenge</strong>
+          </p>
+          <p className="mb-1">
+            Developed by <strong>Abdullah al Mubin</strong>
+          </p>
+          <div className="mb-3 mt-3 text-xs">
+            <p className="mb-1">
+              <strong>Task Completion:</strong>
+            </p>
+            <p className="mb-1">
+              • Task 1 & Task 2: Completed (Branch: <a 
+                href="https://github.com/abdullahmubin/puzzle/tree/task1-task2-completed" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 hover:underline font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded"
+              >
+                task1-task2-completed
+              </a>)
+            </p>
+            <p>
+              • Task 1, Task 2 & Task 3: Completed (Branches: <a 
+                href="https://github.com/abdullahmubin/puzzle/tree/task1-task2-task3-completed" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 hover:underline font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded"
+              >
+                task1-task2-task3-completed
+              </a> | <a 
+                href="https://github.com/abdullahmubin/puzzle/tree/master" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 dark:text-blue-400 hover:underline font-mono bg-slate-100 dark:bg-slate-800 px-1 rounded"
+              >
+                master
+              </a>)
+            </p>
+          </div>
+          <div className="flex justify-center gap-4 flex-wrap text-xs">
+            <a 
+              href="mailto:amubin19@gmail.com" 
+              className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+            >
+              📧 amubin19@gmail.com
+            </a>
+            <a 
+              href="https://wa.me/8801686578649" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+            >
+              📱 +8801686578649
+            </a>
+            <span>📍 Dhaka, Bangladesh</span>
+          </div>
+          <div className="flex justify-center gap-4 mt-3">
+            <a 
+              href="https://github.com/abdullahmubin" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+            >
+              GitHub
+            </a>
+            <a 
+              href="https://www.linkedin.com/in/abdullah-al-mubin/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-slate-900 dark:hover:text-slate-200 transition-colors"
+            >
+              LinkedIn
+            </a>
+          </div>
+        </footer>
       </div>
     </div>
   );
