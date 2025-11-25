@@ -35,6 +35,13 @@ export default function PuzzleGrid({
   // Uses Set for efficient add/remove/check operations
   const [selected, setSelected] = useState(new Set());
 
+  // REF: Time-based detection tracking
+  // Tracks puzzle start time, click timestamps, and validation time
+  // Used to detect automated solving attempts
+  const puzzleStartTimeRef = useRef(null);
+  const clickTimestampsRef = useRef([]);
+  const validationTimeRef = useRef(null);
+
   /**
    * EFFECT: Initialize Canvas
    * Loads the captured image and draws the puzzle grid when component mounts
@@ -42,6 +49,11 @@ export default function PuzzleGrid({
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
+
+    // FEATURE: Time-Based Detection - Initialize timing tracking
+    // Record when puzzle screen is displayed (for human verification)
+    puzzleStartTimeRef.current = performance.now();
+    clickTimestampsRef.current = [];
 
     // Load image from data URL
     const img = new Image();
@@ -210,6 +222,14 @@ export default function PuzzleGrid({
     next.has(idx) ? next.delete(idx) : next.add(idx);
     setSelected(next);
 
+    // FEATURE: Time-Based Detection - Track click timestamps
+    // Record timestamp for each user interaction to detect automated patterns
+    clickTimestampsRef.current.push({
+      timestamp: performance.now(),
+      cellIndex: idx,
+      action: next.has(idx) ? 'select' : 'deselect'
+    });
+
     // Update visual feedback (yellow borders on selected cells)
     drawUserSelections(next);
   }
@@ -286,7 +306,17 @@ export default function PuzzleGrid({
 
       {/* FEATURE: Validation Button */}
       {/* Submits selected cells for validation */}
-      <button onClick={() => onValidate([...selected])}>
+      <button onClick={() => {
+        // FEATURE: Time-Based Detection - Record validation time
+        validationTimeRef.current = performance.now();
+        
+        // Pass timing data along with selected cells for validation
+        onValidate([...selected], {
+          puzzleStartTime: puzzleStartTimeRef.current,
+          clickTimestamps: clickTimestampsRef.current,
+          validationTime: validationTimeRef.current
+        });
+      }}>
         Validate
       </button>
     </div>
