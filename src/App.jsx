@@ -20,8 +20,8 @@ export default function App() {
   // Contains: { image, region, gridRows, gridCols }
   const [captured, setCaptured] = useState(null);
   
-  // STATE MANAGEMENT: Stores watermark data (which cells have watermarks and target shape)
-  // Contains: { watermarks: [{idx, shape}], targetShape }
+  // STATE MANAGEMENT: Stores watermark data (which cells have watermarks, target shape, and target color)
+  // Contains: { watermarks: [{idx, shape, color}], targetShape, targetColor }
   const [wm, setWm] = useState(null);
   
   // STATE MANAGEMENT: Stores validation result (true = passed, false = failed)
@@ -64,15 +64,15 @@ export default function App() {
     const gridRows = 4;
     const gridCols = 4;
     
-    // FEATURE: Generate random watermarks and target shape
-    // This creates watermarks on 50% of cells and picks a random target shape
-    const { watermarks, targetShape } = createWatermarks(gridRows, gridCols);
+    // FEATURE: Generate random watermarks, target shape, and target color
+    // This creates watermarks on 50% of cells and picks a random target shape and color
+    const { watermarks, targetShape, targetColor } = createWatermarks(gridRows, gridCols);
 
     // Save captured image data and grid configuration
     setCaptured({ image, region, gridRows, gridCols });
     
-    // Save watermark data (which cells have which shapes, and what to find)
-    setWm({ watermarks, targetShape });
+    // Save watermark data (which cells have which shapes and colors, and what to find)
+    setWm({ watermarks, targetShape, targetColor });
 
     // Navigate to puzzle screen
     setScreen("puzzle");
@@ -202,9 +202,17 @@ export default function App() {
       return;
     }
 
-    // Find all cells that have the target shape (correct answers)
+    // Find all cells that have BOTH the target shape AND target color (correct answers)
+    // User must match both shape and color to pass
+    if (!wm.targetShape || !wm.targetColor) {
+      console.error('Missing target shape or color:', { targetShape: wm.targetShape, targetColor: wm.targetColor });
+      setResult(false);
+      setScreen("result");
+      return;
+    }
+
     const correct = wm.watermarks
-      .filter(w => w.shape === wm.targetShape)
+      .filter(w => w.shape === wm.targetShape && w.color === wm.targetColor)
       .map(w => w.idx);
 
     // Convert to Sets for easy comparison
@@ -254,6 +262,7 @@ export default function App() {
           gridCols={captured.gridCols}
           watermarks={wm.watermarks}
           targetShape={wm.targetShape}
+          targetColor={wm.targetColor}
           onValidate={validatePuzzle}
         />
       )}

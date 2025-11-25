@@ -16,8 +16,9 @@ export default function PuzzleGrid({
   region,          // Square region coordinates {x, y, size, width, height}
   gridRows,        // Number of rows in grid (4)
   gridCols,        // Number of columns in grid (4)
-  watermarks,      // Array of {idx, shape} objects for cells with watermarks
+  watermarks,      // Array of {idx, shape, color} objects for cells with watermarks
   targetShape,     // Shape user needs to find (e.g., "triangle", "square", "circle")
+  targetColor,     // Color tint user needs to find (e.g., "red", "green", "blue")
   onValidate       // Callback function when user clicks Validate
 }) {
 
@@ -121,22 +122,23 @@ export default function PuzzleGrid({
       ctx.stroke();
     }
 
-    // FEATURE: Draw Watermark Shapes
-    // Draws shapes (triangle, square, circle) in cells that have watermarks
+    // FEATURE: Draw Watermark Shapes with Color Tints
+    // Draws shapes (triangle, square, circle) with color tints (red, green, blue) in cells that have watermarks
     watermarks.forEach(w => {
-      drawShape(ctx, w.shape, w.idx);
+      drawShape(ctx, w.shape, w.color, w.idx);
     });
   }
 
   /**
-   * FEATURE: Draw Individual Watermark Shape
-   * Draws a single shape (triangle, square, or circle) in a specific grid cell
+   * FEATURE: Draw Individual Watermark Shape with Color Tint
+   * Draws a single shape (triangle, square, or circle) with a color tint in a specific grid cell
    * 
    * @param ctx - Canvas 2D context
    * @param shape - Shape type: "triangle", "square", or "circle"
+   * @param color - Color tint: "red", "green", or "blue"
    * @param idx - Grid cell index (0-15 for 4x4 grid)
    */
-  function drawShape(ctx, shape, idx) {
+  function drawShape(ctx, shape, color, idx) {
     const { x, y, size } = region;
     const cellW = size / gridCols;
     const cellH = size / gridRows;
@@ -166,8 +168,21 @@ export default function PuzzleGrid({
     }
     ctx.rotate(rotationsRef.current[idx]);
     
-    // Set shape color (semi-transparent black)
-    ctx.fillStyle = "rgba(0,0,0,0.7)";
+    // FEATURE: Set shape color based on color tint
+    // Each color tint uses a semi-transparent RGB value
+    // Red: rgba(255, 0, 0, 0.7)
+    // Green: rgba(0, 255, 0, 0.7)
+    // Blue: rgba(0, 0, 255, 0.7)
+    if (color === "red") {
+      ctx.fillStyle = "rgba(255, 0, 0, 0.7)";
+    } else if (color === "green") {
+      ctx.fillStyle = "rgba(0, 255, 0, 0.7)";
+    } else if (color === "blue") {
+      ctx.fillStyle = "rgba(0, 0, 255, 0.7)";
+    } else {
+      // Fallback to black if color is invalid
+      ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+    }
 
     // FEATURE: Draw Different Shape Types
     ctx.beginPath();
@@ -302,13 +317,17 @@ export default function PuzzleGrid({
   return (
     <div className="space-y-6">
       {/* FEATURE: Instructions Display */}
-      {/* Shows user which shape they need to find */}
+      {/* Shows user which shape and color they need to find */}
       <div className="text-center">
         <h3 className="text-2xl font-semibold text-slate-900 dark:text-slate-100 mb-2">
-          Select all <span className="text-blue-600 dark:text-blue-400 capitalize font-bold">{targetShape}</span> shapes
+          Select all <span className={`capitalize font-bold ${
+            targetColor === 'red' ? 'text-red-600 dark:text-red-400' :
+            targetColor === 'green' ? 'text-green-600 dark:text-green-400' :
+            'text-blue-600 dark:text-blue-400'
+          }`}>{targetColor || 'colored'}</span> <span className="text-blue-600 dark:text-blue-400 capitalize font-bold">{targetShape}</span> shapes
         </h3>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Click on the cells containing the target shape
+          Click on the cells containing both the <span className="capitalize font-semibold">{targetColor || 'specified'}</span> color and <span className="capitalize font-semibold">{targetShape}</span> shape
         </p>
       </div>
 

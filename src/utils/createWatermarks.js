@@ -1,16 +1,17 @@
 /**
  * WATERMARK GENERATION UTILITY
  * 
- * FEATURE: Random Watermark Distribution
+ * FEATURE: Random Watermark Distribution with Color Tints
  * 
  * This function creates a random puzzle configuration:
  * 1. Randomly selects 50% of grid cells to receive watermarks
  * 2. Assigns random shapes (triangle, square, circle) to those cells
- * 3. Selects a random target shape for the user to find
+ * 3. Assigns random color tints (red, green, blue) to those cells
+ * 4. Selects a random target shape and color for the user to find
  * 
  * @param {number} rows - Number of rows in the grid (e.g., 4)
  * @param {number} cols - Number of columns in the grid (e.g., 4)
- * @returns {Object} - { watermarks: [{idx, shape}], targetShape: string }
+ * @returns {Object} - { watermarks: [{idx, shape, color}], targetShape: string, targetColor: string }
  */
 export function createWatermarks(rows, cols) {
     // Calculate total number of cells in grid
@@ -34,22 +35,29 @@ export function createWatermarks(rows, cols) {
   
     // Available shape types
     const shapes = ["triangle", "square", "circle"];
+    
+    // FEATURE: Available color tints
+    // Red, green, and blue color tints for watermarks
+    const colors = ["red", "green", "blue"];
   
-    // FEATURE: Assign Random Shapes to Selected Cells
-    // Each selected cell gets a randomly chosen shape
+    // FEATURE: Assign Random Shapes and Colors to Selected Cells
+    // Each selected cell gets a randomly chosen shape and color
     const watermarks = chosen.map(idx => ({
       idx,  // Cell index (0-15 for 4x4 grid)
-      shape: shapes[Math.floor(Math.random() * shapes.length)]  // Random shape
+      shape: shapes[Math.floor(Math.random() * shapes.length)],  // Random shape
+      color: colors[Math.floor(Math.random() * colors.length)]  // Random color tint
     }));
   
-    // FEATURE: Select Target Shape
-    // Randomly choose which shape the user needs to find
-    // This is the shape that determines which cells are "correct" answers
+    // FEATURE: Select Target Shape and Color
+    // Randomly choose which shape and color combination the user needs to find
+    // This determines which cells are "correct" answers (must match BOTH shape AND color)
     const targetShape = shapes[Math.floor(Math.random() * shapes.length)];
+    const targetColor = colors[Math.floor(Math.random() * colors.length)];
   
     // Return watermark configuration
-    // watermarks: Array of cells with watermarks and their shapes
+    // watermarks: Array of cells with watermarks, their shapes, and colors
     // targetShape: The shape user must find to pass the CAPTCHA
-    return { watermarks, targetShape };
+    // targetColor: The color tint user must find to pass the CAPTCHA
+    return { watermarks, targetShape, targetColor };
   }
   
