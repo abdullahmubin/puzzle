@@ -66,71 +66,71 @@ This section maps each requirement to the specific functions that implement them
 
 ### Task 1: Custom CAPTCHA Component
 
-| Requirement | Function Name(s) | File Location | Line Numbers |
-|------------|------------------|---------------|--------------|
-| **1.1** Video stream from selfie camera | `startCamera()` | `CameraCapture.jsx` | 32-68 |
-| **1.2** Square-shaped area with randomized movement | `animateSquare()` | `CameraCapture.jsx` | 90-141 |
-| **1.3** "Continue" button click | Button `onClick` handler | `CameraCapture.jsx` | 192-197 |
-| **1.4** Lock square location & capture image | `captureFrame()` | `CameraCapture.jsx` | 144-174 |
-| **1.5** Display captured image with grid sectors | `drawPuzzle()`, `useEffect` (image loading) | `PuzzleGrid.jsx` | 33-66, 69-100 |
-| **1.6** Half sectors randomly selected with watermarks | `createWatermarks()` | `createWatermarks.js` | 6-37 |
-| **1.6** Render watermarks (triangle, square, circle) | `drawShape()` | `PuzzleGrid.jsx` | 103-155 |
-| **1.7** Random target shape selection | `createWatermarks()` (target selection) | `createWatermarks.js` | 30-34 |
-| **1.7** User selects sectors | `handleClick()` | `PuzzleGrid.jsx` | 158-195 |
-| **1.8** "Validate" button click | Button `onClick` handler | `PuzzleGrid.jsx` | 256-273 |
-| **1.9** Validation result screen | `validatePuzzle()`, Result screen JSX | `App.jsx` | 178-263, 301-374 |
-| **1.10** Protection from computerized tools | `validateHumanInteraction()` | `App.jsx` | 93-175 |
-| **1.11** Automated test coverage | Test files: `App.test.jsx`, `CameraCapture.test.jsx`, `PuzzleGrid.test.jsx`, `createWatermarks.test.js`, `timeBasedDetection.test.js` | `src/__tests__/` | Various |
+| Requirement | Function Name(s) | File Location |
+|------------|------------------|---------------|
+| **1.1** Video stream from selfie camera | `startCamera()` | `CameraCapture.jsx` |
+| **1.2** Square-shaped area with randomized movement | `animateSquare()` | `CameraCapture.jsx` |
+| **1.3** "Continue" button click | Button `onClick` handler | `CameraCapture.jsx` |
+| **1.4** Lock square location & capture image | `captureFrame()` | `CameraCapture.jsx` |
+| **1.5** Display captured image with grid sectors | `drawPuzzle()`, `useEffect` (image loading) | `PuzzleGrid.jsx` |
+| **1.6** Half sectors randomly selected with watermarks | `createWatermarks()` | `createWatermarks.js` |
+| **1.6** Render watermarks (triangle, square, circle) | `drawShape()` | `PuzzleGrid.jsx` |
+| **1.7** Random target shape selection | `createWatermarks()` (target selection) | `createWatermarks.js` |
+| **1.7** User selects sectors | `handleClick()` | `PuzzleGrid.jsx` |
+| **1.8** "Validate" button click | Button `onClick` handler | `PuzzleGrid.jsx` |
+| **1.9** Validation result screen | `validatePuzzle()`, Result screen JSX | `App.jsx` |
+| **1.10** Protection from computerized tools | `validateHumanInteraction()` | `App.jsx` |
+| **1.11** Automated test coverage | Test files: `App.test.jsx`, `CameraCapture.test.jsx`, `PuzzleGrid.test.jsx`, `createWatermarks.test.js`, `timeBasedDetection.test.js` | `src/__tests__/` |
 
 ### Task 2: Color Tint to Watermarks
 
-| Requirement | Function Name(s) | File Location | Line Numbers |
-|------------|------------------|---------------|--------------|
-| **2.1** Random color tint assignment (red, green, blue) | `createWatermarks()` (color assignment) | `createWatermarks.js` | 27 |
-| **2.2** Render watermarks with color tints | `drawShape()` (color rendering) | `PuzzleGrid.jsx` | 129-137 |
-| **2.3** Random target color selection | `createWatermarks()` (target color) | `createWatermarks.js` | 34 |
-| **2.4** Validation requires both shape AND color match | `validatePuzzle()` (filter by shape & color) | `App.jsx` | 205-207 |
-| **2.5** Display target shape and color in instructions | JSX instructions with `targetShape` and `targetColor` | `PuzzleGrid.jsx` | 250-256 |
+| Requirement | Function Name(s) | File Location |
+|------------|------------------|---------------|
+| **2.1** Random color tint assignment (red, green, blue) | `createWatermarks()` (color assignment) | `createWatermarks.js` |
+| **2.2** Render watermarks with color tints | `drawShape()` (color rendering) | `PuzzleGrid.jsx` |
+| **2.3** Random target color selection | `createWatermarks()` (target color) | `createWatermarks.js` |
+| **2.4** Validation requires both shape AND color match | `validatePuzzle()` (filter by shape & color) | `App.jsx` |
+| **2.5** Display target shape and color in instructions | JSX instructions with `targetShape` and `targetColor` | `PuzzleGrid.jsx` |
 
 ### Task 3: User Error Workflow (Progressive Tolerance)
 
-| Requirement | Function Name(s) | File Location | Line Numbers |
-|------------|------------------|---------------|--------------|
-| **3.1** Allow user to make mistakes | `validatePuzzle()` (tolerance calculation) | `App.jsx` | 213-240 |
-| **3.2** Track attempt count | State: `attemptCount`, `setAttemptCount()` | `App.jsx` | 31, 249-250 |
-| **3.3** Progressive tolerance configuration | `TOLERANCE_CONFIG` constant | `App.jsx` | 36-40 |
-| **3.4** Decrease tolerance with each attempt | `validatePuzzle()` (tolerance lookup) | `App.jsx` | 219-222 |
-| **3.5** Calculate mistakes (wrong + missed) | `validatePuzzle()` (mistake calculation) | `App.jsx` | 214-217 |
-| **3.6** Apply tolerance based on attempt | `validatePuzzle()` (validation logic) | `App.jsx` | 225-240 |
-| **3.7** Allow retry through all validation steps | `resetChallenge()` | `App.jsx` | 45-52 |
-| **3.8** Block user after max attempts | `validatePuzzle()` (blocking logic), `isBlocked` state | `App.jsx` | 179-184, 252-256, 32 |
-| **3.9** Reset attempt count on success | `validatePuzzle()` (success handler) | `App.jsx` | 242-246 |
-| **3.10** Display attempt information | Result screen JSX, PuzzleGrid attempt indicator | `App.jsx` (351-353), `PuzzleGrid.jsx` (247-252) | Various |
-| **3.11** Show tolerance description | `PuzzleGrid.jsx` (attempt indicator) | `PuzzleGrid.jsx` | 247-252 |
-| **3.12** Complete reset function | `resetChallengeCompletely()` | `App.jsx` | 55-63 |
+| Requirement | Function Name(s) | File Location |
+|------------|------------------|---------------|
+| **3.1** Allow user to make mistakes | `validatePuzzle()` (tolerance calculation) | `App.jsx` |
+| **3.2** Track attempt count | State: `attemptCount`, `setAttemptCount()` | `App.jsx` |
+| **3.3** Progressive tolerance configuration | `TOLERANCE_CONFIG` constant | `App.jsx` |
+| **3.4** Decrease tolerance with each attempt | `validatePuzzle()` (tolerance lookup) | `App.jsx` |
+| **3.5** Calculate mistakes (wrong + missed) | `validatePuzzle()` (mistake calculation) | `App.jsx` |
+| **3.6** Apply tolerance based on attempt | `validatePuzzle()` (validation logic) | `App.jsx` |
+| **3.7** Allow retry through all validation steps | `resetChallenge()` | `App.jsx` |
+| **3.8** Block user after max attempts | `validatePuzzle()` (blocking logic), `isBlocked` state | `App.jsx` |
+| **3.9** Reset attempt count on success | `validatePuzzle()` (success handler) | `App.jsx` |
+| **3.10** Display attempt information | Result screen JSX, PuzzleGrid attempt indicator | `App.jsx`, `PuzzleGrid.jsx` |
+| **3.11** Show tolerance description | `PuzzleGrid.jsx` (attempt indicator) | `PuzzleGrid.jsx` |
+| **3.12** Complete reset function | `resetChallengeCompletely()` | `App.jsx` |
 
 ### Additional Supporting Functions
 
-| Function Name | Purpose | File Location | Line Numbers |
-|--------------|---------|---------------|--------------|
-| `handleCapture()` | Process captured image and generate watermarks | `App.jsx` | 66-87 |
-| `stopCamera()` | Clean up camera stream | `CameraCapture.jsx` | 71-86 |
-| `drawUserSelections()` | Highlight selected cells with yellow borders | `PuzzleGrid.jsx` | 199-230 |
-| `resetChallenge()` | Reset for retry (keeps attempt count) | `App.jsx` | 45-52 |
-| `resetChallengeCompletely()` | Full reset including attempt count | `App.jsx` | 55-63 |
+| Function Name | Purpose | File Location |
+|--------------|---------|---------------|
+| `handleCapture()` | Process captured image and generate watermarks | `App.jsx` |
+| `stopCamera()` | Clean up camera stream | `CameraCapture.jsx` |
+| `drawUserSelections()` | Highlight selected cells with yellow borders | `PuzzleGrid.jsx` |
+| `resetChallenge()` | Reset for retry (keeps attempt count) | `App.jsx` |
+| `resetChallengeCompletely()` | Full reset including attempt count | `App.jsx` |
 
 ### Key State Variables
 
-| State Variable | Purpose | File Location | Line Numbers |
-|--------------|---------|---------------|--------------|
-| `screen` | Current screen state ("camera", "puzzle", "result") | `App.jsx` | 16 |
-| `captured` | Captured image and region data | `App.jsx` | 19 |
-| `wm` | Watermark data (shapes, colors, target) | `App.jsx` | 22 |
-| `result` | Validation result (true/false) | `App.jsx` | 25 |
-| `attemptCount` | Current attempt number | `App.jsx` | 31 |
-| `isBlocked` | Blocked status after max attempts | `App.jsx` | 32 |
-| `selected` | User's selected cell indices | `PuzzleGrid.jsx` | 25 |
-| `running` | Camera animation running state | `CameraCapture.jsx` | 14 |
+| State Variable | Purpose | File Location |
+|--------------|---------|---------------|
+| `screen` | Current screen state ("camera", "puzzle", "result") | `App.jsx` |
+| `captured` | Captured image and region data | `App.jsx` |
+| `wm` | Watermark data (shapes, colors, target) | `App.jsx` |
+| `result` | Validation result (true/false) | `App.jsx` |
+| `attemptCount` | Current attempt number | `App.jsx` |
+| `isBlocked` | Blocked status after max attempts | `App.jsx` |
+| `selected` | User's selected cell indices | `PuzzleGrid.jsx` |
+| `running` | Camera animation running state | `CameraCapture.jsx` |
 
 
 ## Getting Started
