@@ -214,18 +214,27 @@ export default function App() {
     // Check if valid based on tolerance
     let isValid = false;
     if (totalMistakes <= allowedMistakes && correctSet.size > 0) {
-      // Even with tolerance, need reasonable accuracy
-      const accuracy = correctSelected / correctSet.size;
+      // Calculate accuracy - need to penalize wrong selections
+      // Fixed a bug where selecting wrong answers didn't reduce accuracy
+      // Now: selectionAccuracy = correct / (correct + wrong)
+      // This way if you select 1 correct + 1 wrong, accuracy is only 50%
+      const totalSelected = correctSelected + incorrectSelected;
+      const selectionAccuracy = totalSelected > 0 ? correctSelected / totalSelected : 0;
+      
+      // Also check if they found most/all correct answers
+      const correctAccuracy = correctSelected / correctSet.size;
+      
       if (currentAttempt === 1 && allowedMistakes > 0) {
-        // First try: 80% accuracy + within mistake limit
-        isValid = accuracy >= 0.8 && totalMistakes <= allowedMistakes;
+        // First try: lenient but still need good accuracy
+        // Must find 80% of correct answers AND have 80% selection accuracy (no too many wrong clicks)
+        isValid = correctAccuracy >= 0.8 && selectionAccuracy >= 0.8 && totalMistakes <= allowedMistakes;
       } else if (allowedMistakes === 0) {
-        // Third try: perfect match only
+        // Third try: perfect match only - all correct, zero wrong
         isValid = correctSet.size === userSet.size &&
-      [...correctSet].every(i => userSet.has(i));
+      [...correctSet].every(i => userSet.has(i)) && incorrectSelected === 0;
       } else {
-        // Second try: 90% accuracy + within mistake limit
-        isValid = accuracy >= 0.9 && totalMistakes <= allowedMistakes;
+        // Second try: stricter - 90% for both metrics
+        isValid = correctAccuracy >= 0.9 && selectionAccuracy >= 0.9 && totalMistakes <= allowedMistakes;
       }
     }
 
@@ -258,7 +267,7 @@ export default function App() {
         {/* Header Section with Title and Subtitle */}
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-3">
-            Visual CAPTCHA Challenge
+            Reactjs Code Challenge
           </h1>
           <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400">
             Prove you're human by completing the visual puzzle
