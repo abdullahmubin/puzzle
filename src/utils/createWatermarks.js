@@ -1,19 +1,17 @@
-/**
- * Generates random watermarks for the puzzle
- * Picks 50% of cells, assigns random shapes and colors, then picks a target
- * from the created watermarks (ensures there's always at least one correct answer)
- */
+// Generate random watermarks for the puzzle
+// Picks 50% of cells, assigns random shapes/colors, then picks target from those
+// This ensures there's always at least one correct answer (had a bug where target didn't exist!)
 export function createWatermarks(rows, cols) {
     const total = rows * cols;
     const indices = [...Array(total).keys()];
   
-    // Shuffle indices randomly (Fisher-Yates)
+    // Fisher-Yates shuffle - randomize cell selection
     for (let i = indices.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [indices[i], indices[j]] = [indices[j], indices[i]];
     }
   
-    // Pick half the cells for watermarks
+    // Pick half the cells
     const half = Math.floor(total / 2);
     const chosen = indices.slice(0, half);
   
@@ -27,8 +25,8 @@ export function createWatermarks(rows, cols) {
       color: colors[Math.floor(Math.random() * colors.length)]
     }));
   
-    // Pick a target from the watermarks we actually created
-    // This ensures there's always at least one correct answer
+    // Pick target from actual watermarks - guarantees at least one correct answer
+    // Fixed a bug where target was picked randomly and might not exist in watermarks
     const randomWatermark = watermarks[Math.floor(Math.random() * watermarks.length)];
     const targetShape = randomWatermark.shape;
     const targetColor = randomWatermark.color;

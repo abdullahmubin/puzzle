@@ -1,10 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
-/**
- * Puzzle grid component
- * Shows the captured image with a grid overlay and watermarks
- * User clicks cells to select matching shapes
- */
+// Puzzle grid - shows image with grid overlay and watermarks
+// User clicks cells to select the matching shapes
 export default function PuzzleGrid({
   imageDataUrl,
   region,
@@ -19,12 +16,12 @@ export default function PuzzleGrid({
 }) {
 
   const canvasRef = useRef(null);
-  const imageRef = useRef(null);  // Cache the loaded image
-  const rotationsRef = useRef({});  // Store rotation for each shape so they don't shake
+  const imageRef = useRef(null);  // Cache image to avoid reloading
+  const rotationsRef = useRef({});  // Store rotation per shape so they don't shake on redraw
   
   const [selected, setSelected] = useState(new Set());
 
-  // Track timing for bot detection
+  // Timing data for bot detection
   const puzzleStartTimeRef = useRef(null);
   const clickTimestampsRef = useRef([]);
   const validationTimeRef = useRef(null);
@@ -48,36 +45,37 @@ export default function PuzzleGrid({
     // Load the image
     const img = new Image();
     img.onload = () => {
-      // Cache it so we don't reload every time
+      // Cache it - avoids reloading on every redraw
       imageRef.current = img;
       
-      // Set canvas size
+      // Match canvas size to image
       canvas.width = img.width;
       canvas.height = img.height;
 
-      // Draw image, then grid and watermarks
+      // Draw everything
       ctx.drawImage(img, 0, 0);
       drawPuzzle(ctx);
     };
     img.onerror = (error) => {
       console.error('Failed to load image:', error);
+      // TODO: show error to user
     };
     img.src = imageDataUrl;
   }, [imageDataUrl, region, watermarks]);
 
-  // Draw the grid and watermarks
+  // Draw grid lines and watermarks
   function drawPuzzle(ctx) {
     const { x, y, size } = region;
     
-    // Calculate cell size
+    // Cell dimensions
     const cellW = size / gridCols;
     const cellH = size / gridRows;
 
-    // Draw grid lines
+    // Grid line style
     ctx.strokeStyle = "rgba(0,0,0,0.7)";
     ctx.lineWidth = 2;
 
-    // Horizontal lines
+    // Draw horizontal lines
     for (let r = 0; r <= gridRows; r++) {
       ctx.beginPath();
       ctx.moveTo(x, y + r * cellH);
@@ -85,7 +83,7 @@ export default function PuzzleGrid({
       ctx.stroke();
     }
 
-    // Vertical lines
+    // Draw vertical lines
     for (let c = 0; c <= gridCols; c++) {
       ctx.beginPath();
       ctx.moveTo(x + c * cellW, y);
@@ -93,7 +91,7 @@ export default function PuzzleGrid({
       ctx.stroke();
     }
 
-    // Draw watermarks
+    // Draw all watermarks
     watermarks.forEach(w => {
       drawShape(ctx, w.shape, w.color, w.idx);
     });
@@ -119,13 +117,13 @@ export default function PuzzleGrid({
     ctx.save();
     ctx.translate(cx, cy);
     
-    // Use consistent rotation so shapes don't shake on redraw
+    // Use consistent rotation per shape - prevents shaking on redraw
     if (!rotationsRef.current[idx]) {
       rotationsRef.current[idx] = (Math.random() - 0.5) * 0.5;
     }
     ctx.rotate(rotationsRef.current[idx]);
     
-    // Set color based on tint
+    // Set fill color based on tint
     if (color === "red") {
       ctx.fillStyle = "rgba(255, 0, 0, 0.7)";
     } else if (color === "green") {
@@ -133,17 +131,17 @@ export default function PuzzleGrid({
     } else if (color === "blue") {
       ctx.fillStyle = "rgba(0, 0, 255, 0.7)";
     } else {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+      ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; // fallback
     }
 
-    // Draw the shape
+    // Draw the actual shape
     ctx.beginPath();
     if (shape === "circle") {
       ctx.arc(0, 0, s, 0, Math.PI * 2);
     } else if (shape === "square") {
       ctx.rect(-s, -s, s * 2, s * 2);
     } else {
-      // triangle
+      // triangle - draw three points
       ctx.moveTo(0, -s);
       ctx.lineTo(s, s);
       ctx.lineTo(-s, s);
@@ -154,13 +152,13 @@ export default function PuzzleGrid({
     ctx.restore();
   }
 
-  // Handle clicks on the canvas to select/deselect cells
+  // Handle canvas clicks - select/deselect cells
   function handleClick(e) {
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     
-    // Convert screen coordinates to canvas coordinates
-    // Canvas might be scaled differently than its display size
+    // Convert screen coords to canvas coords
+    // Canvas might be scaled (responsive sizing)
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     
@@ -169,11 +167,11 @@ export default function PuzzleGrid({
 
     const { x, y, size } = region;
 
-    // Ignore clicks outside the grid
+    // Ignore clicks outside grid area
     if (cx < x || cx > x + size || cy < y || cy > y + size)
       return;
 
-    // Figure out which cell was clicked
+    // Calculate which cell was clicked
     const col = Math.floor((cx - x) / (size / gridCols));
     const row = Math.floor((cy - y) / (size / gridRows));
     const idx = row * gridCols + col;
@@ -183,19 +181,19 @@ export default function PuzzleGrid({
     next.has(idx) ? next.delete(idx) : next.add(idx);
     setSelected(next);
 
-    // Track timing for bot detection
+    // Track click timing for bot detection
     clickTimestampsRef.current.push({
       timestamp: performance.now(),
       cellIndex: idx,
       action: next.has(idx) ? 'select' : 'deselect'
     });
 
-    // Redraw with selection highlights
+    // Redraw with yellow borders on selected cells
     drawUserSelections(next);
   }
 
-  // Redraw canvas with yellow borders on selected cells
-  // Uses cached image to avoid flicker
+  // Redraw with yellow borders on selected cells
+  // Uses cached image to avoid flicker/reloading
   function drawUserSelections(sel) {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -203,10 +201,10 @@ export default function PuzzleGrid({
     const img = imageRef.current;
     
     if (!img) {
-      return;  // Image not loaded yet
+      return;  // Image not ready yet
     }
 
-    // Redraw everything
+    // Redraw base image and grid
     ctx.drawImage(img, 0, 0);
     drawPuzzle(ctx);
 
@@ -214,7 +212,7 @@ export default function PuzzleGrid({
     const cellW = size / gridCols;
     const cellH = size / gridRows;
 
-    // Draw yellow borders on selected cells
+    // Highlight selected cells with yellow border
     ctx.strokeStyle = "yellow";
     ctx.lineWidth = 3;
 
@@ -231,7 +229,8 @@ export default function PuzzleGrid({
     });
   }
 
-  // Tolerance configuration (should match App.jsx)
+  // Tolerance config - should match App.jsx
+  // TODO: extract to shared constant to avoid duplication
   const TOLERANCE_CONFIG = {
     1: { allowedMistakes: 2, description: "You can make up to 2 mistakes" },
     2: { allowedMistakes: 1, description: "You can make up to 1 mistake" },
@@ -276,9 +275,10 @@ export default function PuzzleGrid({
       <div className="flex justify-center">
         <button
           onClick={() => {
-            // Record validation time for bot detection
+            // Record validation time
             validationTimeRef.current = performance.now();
             
+            // Send validation with timing data for bot detection
             onValidate([...selected], {
               puzzleStartTime: puzzleStartTimeRef.current,
               clickTimestamps: clickTimestampsRef.current,

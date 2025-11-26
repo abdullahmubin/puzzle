@@ -1,46 +1,44 @@
 import { useEffect, useRef, useState } from 'react';
 
-/**
- * Camera capture component
- * Shows camera feed with a bouncing square overlay, captures frame when user clicks
- */
+// Camera component - shows video feed with bouncing square overlay
+// The square movement is randomized to make it more dynamic
 export default function CameraCapture({ onCaptured }) {
-  // Refs for video, overlay canvas, and animation
+  // Refs for video element, overlay canvas, and animation frame
   const videoRef = useRef(null);
   const overlayRef = useRef(null);
   const animationRef = useRef(null);
 
-  // Whether the animation is running
+  // Animation running state
   const [running, setRunning] = useState(true);
 
-  // Square position and movement
+  // Square position and physics
   const squareRef = useRef({
     x: 50,
     y: 50,
     size: 150,
-    vx: 1.2,  // horizontal velocity
-    vy: 1.0   // vertical velocity
+    vx: 1.2,  // horizontal speed
+    vy: 1.0   // vertical speed
   });
 
-  // Start camera when component mounts, stop when it unmounts
+  // Start camera on mount, cleanup on unmount
   useEffect(() => {
     startCamera();
     return () => stopCamera();
   }, []);
 
-  // Request camera access and start video stream
+  // Start camera - request access and show video feed
   async function startCamera() {
     try {
       setRunning(true);
       
-      // Clean up any existing stream first
+      // Clean up any existing stream - had issues with multiple streams before
       if (videoRef.current?.srcObject) {
         const oldStream = videoRef.current.srcObject;
         oldStream.getTracks().forEach(track => track.stop());
         videoRef.current.srcObject = null;
       }
 
-      // Reset square to starting position
+      // Reset square position - start from top-left
       squareRef.current = {
         x: 50,
         y: 50,
@@ -49,29 +47,31 @@ export default function CameraCapture({ onCaptured }) {
         vy: 1.0
       };
 
-      // Get front-facing camera (no audio needed)
+      // Get front camera (facingMode: 'user')
+      // No audio needed for this
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user' },
         audio: false
       });
       
-      // Show video feed
+      // Show the video
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
 
-      // Start the bouncing square animation
+      // Start animation
       animateSquare();
     } catch (e) {
       console.error('Camera error:', e);
+      // TODO: show user-friendly error message
       setRunning(false);
     }
   }
 
-  // Stop camera and cancel animation
+  // Stop camera and cleanup
   function stopCamera() {
     setRunning(false);
     
-    // Stop animation loop
+    // Cancel animation
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
@@ -85,8 +85,9 @@ export default function CameraCapture({ onCaptured }) {
     }
   }
 
-  // Animate the bouncing square overlay
-  // Uses simple physics: velocity, random acceleration, friction, and boundary bouncing
+  // Animate the bouncing square
+  // Simple physics: velocity + random acceleration + friction + bouncing
+  // The randomness makes it less predictable
   function animateSquare() {
     const canvas = overlayRef.current;
     const ctx = canvas.getContext('2d');
@@ -104,19 +105,19 @@ export default function CameraCapture({ onCaptured }) {
 
       const sq = squareRef.current;
 
-      // Add some randomness to make movement unpredictable
+      // Add randomness to velocity - makes it less predictable
       sq.vx += (Math.random() - 0.5) * 0.5;
       sq.vy += (Math.random() - 0.5) * 0.5;
 
-      // Apply friction so it slows down over time
+      // Friction - slows it down gradually
       sq.vx *= 0.92;
       sq.vy *= 0.92;
 
-      // Move the square
+      // Update position
       sq.x += sq.vx;
       sq.y += sq.vy;
 
-      // Bounce off edges
+      // Bounce off edges - keep it within bounds
       sq.x = Math.max(0, Math.min(vw - sq.size, sq.x));
       sq.y = Math.max(0, Math.min(vh - sq.size, sq.y));
 
@@ -140,33 +141,34 @@ export default function CameraCapture({ onCaptured }) {
     step();
   }
 
-  // Capture the current video frame
+  // Capture current frame - draw video to canvas and convert to image
   function captureFrame() {
     const video = videoRef.current;
 
-    // Make sure video is ready
+    // Safety check - video needs to be ready
     if (!video || !video.videoWidth || !video.videoHeight) {
       console.error('Video not ready for capture');
       return;
     }
 
-    // Create a canvas and draw the video frame to it
+    // Create temp canvas and draw video frame
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(video, 0, 0);
 
-    // Convert to image data URL
+    // Convert to base64 image
     const image = canvas.toDataURL("image/png");
     
-    // Get where the square was positioned
+    // Get square position at capture time
     const { x, y, size } = squareRef.current;
 
-    // Stop camera after capturing
+    // Stop camera - important to do this AFTER capture
+    // Had a bug where stopping before capture caused blank images
     stopCamera();
 
-    // Send captured data to parent
+    // Send to parent component
     onCaptured({
       image,
       region: { x, y, size, width: canvas.width, height: canvas.height }
