@@ -3,55 +3,49 @@ import CameraCapture from './components/CameraCapture';
 import PuzzleGrid from './components/PuzzleGrid';
 import { createWatermarks } from './utils/createWatermarks';
 
-/**
- * Main app component that handles the CAPTCHA flow
- * 
- * Three screens:
- * - Camera: user takes a photo
- * - Puzzle: user selects matching shapes
- * - Result: shows if they passed or failed
- */
+// Main CAPTCHA app - handles the whole flow
+// Three screens: camera -> puzzle -> result
 export default function App() {
-  // Current screen: "camera", "puzzle", or "result"
+  // Screen state: "camera", "puzzle", or "result"
   const [screen, setScreen] = useState("camera");
   
-  // Captured image and grid info from camera
+  // Captured image data from camera
   const [captured, setCaptured] = useState(null);
   
-  // Watermark data: which cells have shapes/colors, and what to find
+  // Watermark stuff - which cells have shapes/colors, what to find
   const [wm, setWm] = useState(null);
   
-  // Validation result: true if passed, false if failed
+  // Did they pass or fail?
   const [result, setResult] = useState(null);
 
-  // Key to force camera component to remount on reset
+  // Key to force camera remount - had issues with camera not resetting properly
   const [cameraKey, setCameraKey] = useState(0);
 
-  // Attempt tracking for progressive tolerance
+  // Track attempts for progressive tolerance
   const [attemptCount, setAttemptCount] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
-  const MAX_ATTEMPTS = 3;
+  const MAX_ATTEMPTS = 3; // TODO: maybe make this configurable?
 
-  // Tolerance configuration - decreases with each attempt
+  // Tolerance gets stricter with each attempt
+  // First try is lenient, then we get stricter
   const TOLERANCE_CONFIG = {
-    1: { allowedMistakes: 2, description: "You can make up to 2 mistakes" }, // First attempt: lenient
-    2: { allowedMistakes: 1, description: "You can make up to 1 mistake" }, // Second attempt: moderate
-    3: { allowedMistakes: 0, description: "Perfect match required" }, // Third attempt: strict
+    1: { allowedMistakes: 2, description: "You can make up to 2 mistakes" },
+    2: { allowedMistakes: 1, description: "You can make up to 1 mistake" },
+    3: { allowedMistakes: 0, description: "Perfect match required" },
   };
 
-  // Reset everything to start a new challenge
-  // Note: attemptCount is NOT reset here - it only resets on success
-  // This allows progressive tolerance across retries
+  // Reset for retry - keeps attempt count so tolerance gets stricter
+  // Only resets attempt count on success
   function resetChallenge() {
     setScreen("camera");
     setCaptured(null);
     setWm(null);
     setResult(null);
-    // Change key to force camera component to remount
+    // Force camera remount - this was needed to fix a bug where camera wouldn't restart
     setCameraKey(prev => prev + 1);
   }
 
-  // Reset everything including attempt count (for starting completely new challenge)
+  // Full reset - starts completely fresh (used when blocked or "Play Again")
   function resetChallengeCompletely() {
     setScreen("camera");
     setCaptured(null);
@@ -62,34 +56,31 @@ export default function App() {
     setCameraKey(prev => prev + 1);
   }
 
-  // Called when user captures a photo
+  // User captured a photo - generate puzzle and move to next screen
   function handleCapture({ image, region }) {
-    // Make sure we got valid data
+    // Safety check - had some issues with undefined data before
     if (!image || !region) {
       console.error('Invalid capture data:', { image, region });
       return;
     }
 
-    // 4x4 grid = 16 cells total
+    // 4x4 grid - 16 cells total
     const gridRows = 4;
     const gridCols = 4;
     
-    // Generate random watermarks and pick a target shape/color
-    // Half the cells get watermarks
+    // Generate watermarks - half the cells get random shapes/colors
     const { watermarks, targetShape, targetColor } = createWatermarks(gridRows, gridCols);
 
-    // Save everything
+    // Store everything we need
     setCaptured({ image, region, gridRows, gridCols });
     setWm({ watermarks, targetShape, targetColor });
     
-    // Go to puzzle screen
+    // Show the puzzle
     setScreen("puzzle");
   }
 
-  /**
-   * Checks if the user interaction looks human or automated
-   * Looks at timing patterns, click intervals, etc.
-   */
+  // Bot detection - checks if interaction timing looks human
+  // This is pretty basic but catches obvious automation
   function validateHumanInteraction(timingData) {
     if (!timingData) {
       return { isHuman: false, reasons: ['No timing data provided'] };
@@ -99,25 +90,24 @@ export default function App() {
     const reasons = [];
     let isHuman = true;
 
-    // How long did they take?
+    // Total time taken
     const totalTime = validationTime - puzzleStartTime;
     const totalTimeSeconds = totalTime / 1000;
 
-    // Check 1: Too fast? Bots can solve instantly, humans need a few seconds
-    const MIN_TIME_SECONDS = 2.0;
+    // Check 1: Too fast? Bots solve instantly, humans need time to think
+    const MIN_TIME_SECONDS = 2.0; // 2 seconds minimum seems reasonable
     if (totalTimeSeconds < MIN_TIME_SECONDS) {
       isHuman = false;
       reasons.push(`Too fast: Completed in ${totalTimeSeconds.toFixed(2)}s (minimum: ${MIN_TIME_SECONDS}s)`);
     }
 
-    // Check 2: Too slow? Might be a bot with artificial delays
-    const MAX_TIME_SECONDS = 300; // 5 minutes
+    // Check 2: Too slow? Might be suspicious but not necessarily a bot
+    const MAX_TIME_SECONDS = 300; // 5 min max - probably just someone taking their time
     if (totalTimeSeconds > MAX_TIME_SECONDS) {
       reasons.push(`Warning: Very long completion time (${totalTimeSeconds.toFixed(2)}s)`);
     }
 
-    // Check 3: Look at click patterns
-    // Bots tend to click at perfectly regular intervals
+    // Check 3: Look at click patterns - bots click at perfect intervals
     if (clickTimestamps.length > 1) {
       const intervals = [];
       for (let i = 1; i < clickTimestamps.length; i++) {
@@ -125,46 +115,46 @@ export default function App() {
         intervals.push(interval);
       }
 
-      // Calculate how consistent the intervals are
+      // Calculate consistency (coefficient of variation)
+      // Lower CV = more consistent = more bot-like
       const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
       const variance = intervals.reduce((sum, interval) => {
         return sum + Math.pow(interval - avgInterval, 2);
       }, 0) / intervals.length;
       const stdDev = Math.sqrt(variance);
 
-      // Check 3a: Are intervals too consistent? Humans have natural variation
+      // Check 3a: Too consistent? Humans have natural variation
       const COEFFICIENT_OF_VARIATION = stdDev / avgInterval;
-      const MIN_CV = 0.15; // Need at least this much variation to look human
+      const MIN_CV = 0.15; // This threshold seems to work well
       if (COEFFICIENT_OF_VARIATION < MIN_CV && intervals.length >= 3) {
         isHuman = false;
         reasons.push(`Suspicious click pattern: Too consistent intervals (CV: ${COEFFICIENT_OF_VARIATION.toFixed(3)})`);
       }
 
-      // Check 3b: Clicking too fast? Humans can't reliably click faster than ~100ms apart
-      const MIN_CLICK_INTERVAL_MS = 80;
+      // Check 3b: Clicking too fast? Humans can't click faster than ~100ms reliably
+      const MIN_CLICK_INTERVAL_MS = 80; // A bit below 100ms to account for edge cases
       const tooFastClicks = intervals.filter(interval => interval < MIN_CLICK_INTERVAL_MS).length;
       if (tooFastClicks > 0) {
         isHuman = false;
         reasons.push(`Suspicious: ${tooFastClicks} click(s) with interval < ${MIN_CLICK_INTERVAL_MS}ms (human minimum: ~100ms)`);
       }
 
-      // Check 3c: All intervals exactly the same? That's definitely a bot
+      // Check 3c: All intervals identical? Definitely automated
       const uniqueIntervals = new Set(intervals.map(i => Math.round(i)));
       if (uniqueIntervals.size === 1 && intervals.length >= 3) {
         isHuman = false;
         reasons.push(`Suspicious: All click intervals are identical (${intervals[0].toFixed(2)}ms)`);
       }
     } else if (clickTimestamps.length === 0) {
-      // No clicks at all? That's weird
+      // No clicks? That's odd but not necessarily a bot
       reasons.push('Warning: No click interactions recorded');
     }
 
-    // Check 4: Did they validate immediately after first click?
-    // Humans need a moment to think
+    // Check 4: Did they validate right after first click? Humans need thinking time
     if (clickTimestamps.length > 0) {
       const firstClickTime = clickTimestamps[0].timestamp;
       const timeToValidation = validationTime - firstClickTime;
-      const MIN_THINKING_TIME_MS = 500; // Need at least 500ms to think about it
+      const MIN_THINKING_TIME_MS = 500; // Half a second seems reasonable
       if (timeToValidation < MIN_THINKING_TIME_MS) {
         isHuman = false;
         reasons.push(`Too fast validation: ${timeToValidation.toFixed(2)}ms after first click (minimum: ${MIN_THINKING_TIME_MS}ms)`);
@@ -174,19 +164,18 @@ export default function App() {
     return { isHuman, reasons };
   }
 
-  // Called when user clicks "Validate"
+  // Validate the puzzle - check bot detection first, then check answers
   function validatePuzzle(selectedIndices, timingData = null) {
-    // Check if user is blocked
+    // Already blocked? Don't let them continue
     if (isBlocked) {
       setResult(false);
       setScreen("result");
       return;
     }
 
-    // First check if the timing looks human
+    // Check bot detection first - fail fast if automated
     const humanValidation = validateHumanInteraction(timingData);
     
-    // If it looks like a bot, fail immediately
     if (!humanValidation.isHuman) {
       console.warn('Automated solving detected:', humanValidation.reasons);
       setResult(false);
@@ -194,7 +183,7 @@ export default function App() {
       return;
     }
 
-    // Find all cells that match both the target shape AND color
+    // Safety check - had a bug where target wasn't set
     if (!wm.targetShape || !wm.targetColor) {
       console.error('Missing target shape or color:', { targetShape: wm.targetShape, targetColor: wm.targetColor });
       setResult(false);
@@ -202,39 +191,40 @@ export default function App() {
       return;
     }
 
+    // Find all correct cells (must match both shape AND color)
     const correct = wm.watermarks
       .filter(w => w.shape === wm.targetShape && w.color === wm.targetColor)
       .map(w => w.idx);
 
-    // Compare what they selected vs what's correct
+    // Compare selections
     const correctSet = new Set(correct);
     const userSet = new Set(selectedIndices);
 
-    // Calculate mistakes
+    // Count mistakes: wrong selections + missed correct ones
     const correctSelected = [...userSet].filter(i => correctSet.has(i)).length;
     const incorrectSelected = userSet.size - correctSelected;
     const missedCorrect = correctSet.size - correctSelected;
     const totalMistakes = incorrectSelected + missedCorrect;
 
-    // Get tolerance for current attempt
+    // Get tolerance for this attempt
     const currentAttempt = attemptCount + 1;
     const tolerance = TOLERANCE_CONFIG[currentAttempt] || TOLERANCE_CONFIG[3];
     const allowedMistakes = tolerance.allowedMistakes;
 
-    // Validate against tolerance
+    // Check if valid based on tolerance
     let isValid = false;
     if (totalMistakes <= allowedMistakes && correctSet.size > 0) {
-      // Additional check: ensure reasonable accuracy even with tolerance
+      // Even with tolerance, need reasonable accuracy
       const accuracy = correctSelected / correctSet.size;
       if (currentAttempt === 1 && allowedMistakes > 0) {
-        // First attempt with tolerance: require at least 80% accuracy
+        // First try: 80% accuracy + within mistake limit
         isValid = accuracy >= 0.8 && totalMistakes <= allowedMistakes;
       } else if (allowedMistakes === 0) {
-        // Perfect match required (attempt 3)
+        // Third try: perfect match only
         isValid = correctSet.size === userSet.size &&
       [...correctSet].every(i => userSet.has(i));
       } else {
-        // Attempt 2 with tolerance 1: allow mistakes but require good accuracy
+        // Second try: 90% accuracy + within mistake limit
         isValid = accuracy >= 0.9 && totalMistakes <= allowedMistakes;
       }
     }
