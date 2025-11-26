@@ -1,4 +1,4 @@
-# Visual CAPTCHA Challenge
+# Reactjs Code Challenge
 
 **React.js Code Challenge**
 
