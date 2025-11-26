@@ -199,6 +199,13 @@ Tested on:
 - Firefox (latest)
 - Safari (latest)
 
+## Known Issues
+
+- Camera sometimes fails to start on Firefox (works fine on Chrome/Edge)
+- Puzzle grid might look a bit off on very small screens (< 320px width)
+- Error messages are logged to console but not always shown to users (TODO: improve this)
+- Target shape/color might not exist in watermarks (random selection) - could be improved
+
 ## Notes
 
 - All processing happens client-side - no images are sent to any server
