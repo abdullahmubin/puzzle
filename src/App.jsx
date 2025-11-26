@@ -181,7 +181,7 @@ export default function App() {
         {/* Header Section with Title and Subtitle */}
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-slate-100 mb-3">
-            Visual CAPTCHA Challenge
+          Reactjs Code Challenge
           </h1>
           <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400">
             Prove you're human by completing the visual puzzle

@@ -1,4 +1,4 @@
-# Visual CAPTCHA Challenge
+# Reactjs Code Challenge
 
 **React.js Code Challenge (this repo contain just task 1 and task 2)**
 

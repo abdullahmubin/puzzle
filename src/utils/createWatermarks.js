@@ -24,12 +24,13 @@ export function createWatermarks(rows, cols) {
       shape: shapes[Math.floor(Math.random() * shapes.length)],
       color: colors[Math.floor(Math.random() * colors.length)]
     }));
-  
-    // Pick random target - might not exist in watermarks but that's fine
-    // TODO: could improve this to guarantee at least one correct answer
-    const targetShape = shapes[Math.floor(Math.random() * shapes.length)];
-    const targetColor = colors[Math.floor(Math.random() * colors.length)];
-  
+
+    // Pick target from actual watermarks - guarantees at least one correct answer
+    // Fixed bug where target was picked randomly and might not exist in puzzle
+    const randomWatermark = watermarks[Math.floor(Math.random() * watermarks.length)];
+    const targetShape = randomWatermark.shape;
+    const targetColor = randomWatermark.color;
+
     return { watermarks, targetShape, targetColor };
   }
   
